@@ -21,12 +21,14 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef void(*pFunction)(void);
+#define FLASH_APP_ADDR 0x08008000
+void go2APP(void);
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -40,20 +42,54 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void go2APP(void)
+	{
+		uint32_t JumpAddress;
+		pFunction Jump_To_Application;
+		printf("Bootloader Start\r\n");
+		//check
+		if(((*(__IO uint32_t*)FLASH_APP_ADDR)&0x2FFE0000)==0x20000000)
+		{
+			printf("APP Start...\r\n");
+			HAL_Delay(100);
+			//Jump to user Application//
+			JumpAddress=*(__IO uint32_t*)(FLASH_APP_ADDR+4);
+			Jump_To_Application=(pFunction)JumpAddress;
+			//Initialize user application's stack pointer//
+			__set_MSP(*(__IO uint32_t*)FLASH_APP_ADDR);
+			Jump_To_Application();
+		}
+		else{
+			printf("No APP found !!!\r\n");
+		}
+	}
 
+
+
+int _write(int file,char *ptr,int len)
+{
+	int DataIdx;
+	for(DataIdx=0;DataIdx<len;DataIdx++)
+{
+	HAL_UART_Transmit(&huart2,(uint8_t*)ptr++,1,100);
+}
+	return len;
+}
 /* USER CODE END 0 */
 
 /**
@@ -64,7 +100,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -84,7 +119,10 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  printf("IAP Demo Boot\r\n");
 
   /* USER CODE END 2 */
 
@@ -141,6 +179,60 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPIO_Init(void)
+{
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+
+  /* USER CODE END MX_GPIO_Init_1 */
+
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
